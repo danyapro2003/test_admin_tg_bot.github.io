@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка - Запись на маникюр</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+        }
+        
+        .menu-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            background: var(--tg-theme-button-color, #007aff);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .menu-button:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+        
+        .form-container {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--tg-theme-hint-color, #999);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--tg-theme-hint-color, #ddd);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #007aff);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--tg-theme-hint-color, #ddd);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .submit-button {
+            background: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .cancel-button {
+            background: #dc3545;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .schedule-item {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border: 2px solid var(--tg-theme-hint-color, #ddd);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .schedule-item h3 {
+            color: var(--tg-theme-button-color, #007aff);
+            margin-bottom: 5px;
+        }
+        
+        .delete-button {
+            background: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Админка записи на маникюр</h1>
+            <p>Управление расписанием и клиентами</p>
+        </div>
+        
+        <!-- Главное меню -->
+        <div id="mainMenu">
+            <button class="menu-button" onclick="showSection('addSchedule')">Добавить окна на запись</button>
+            <button class="menu-button" onclick="loadSchedule()">Мое расписание</button>
+            <button class="menu-button" onclick="showSection('enrollClient')">Записать клиента</button>
+            <button class="menu-button" onclick="showSection('sendMailing')">Создать рассылку</button>
+            <button class="menu-button" onclick="showSection('sendMessage')">Написать клиенту</button>
+            <button class="menu-button" onclick="exportData()">Экспорт данных БД</button>
+        </div>
+        
+        <!-- Добавить окна на запись -->
+        <div id="addSchedule" class="form-container">
+            <h2>Добавить окна на запись</h2>
+            <div class="form-group">
+                <label class="form-label">Место проведения процедуры:</label>
+                <select id="schedulePlace" class="form-select">
+                    <option value="кудрово">Кудрово</option>
+                    <option value="ломоносовская">Ломоносовская</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата (формат: 12.01):</label>
+                <input type="text" id="scheduleDate" class="form-input" placeholder="12.01">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Время (несколько окон через запятую: 12.00,13.00,14.00):</label>
+                <input type="text" id="scheduleTime" class="form-input" placeholder="12.00,13.00,14.00">
+            </div>
+            <button class="submit-button" onclick="addSchedule()">Создать расписание</button>
+            <button class="cancel-button" onclick="showMainMenu()">Отмена</button>
+        </div>
+        
+        <!-- Записать клиента -->
+        <div id="enrollClient" class="form-container">
+            <h2>Записать клиента</h2>
+            <div class="form-group">
+                <label class="form-label">Место и информация о клиенте:</label>
+                <input type="text" id="clientInfo" class="form-input" placeholder="Информация о клиенте">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата (формат: 12 01):</label>
+                <input type="text" id="clientDate" class="form-input" placeholder="12 01">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Время (формат: 12 00):</label>
+                <input type="text" id="clientTime" class="form-input" placeholder="12 00">
+            </div>
+            <button class="submit-button" onclick="enrollClient()">Записать клиента</button>
+            <button class="cancel-button" onclick="showMainMenu()">Отмена</button>
+        </div>
+        
+        <!-- Создать рассылку -->
+        <div id="sendMailing" class="form-container">
+            <h2>Создать рассылку</h2>
+            <div class="form-group">
+                <label class="form-label">Текст рассылки:</label>
+                <textarea id="mailingText" class="form-input" rows="5" placeholder="Введите текст рассылки..."></textarea>
+            </div>
+            <button class="submit-button" onclick="sendMailing()">Отправить рассылку</button>
+            <button class="cancel-button" onclick="showMainMenu()">Отмена</button>
+        </div>
+        
+        <!-- Написать клиенту -->
+        <div id="sendMessage" class="form-container">
+            <h2>Написать клиенту</h2>
+            <div class="form-group">
+                <label class="form-label">Telegram ID клиента:</label>
+                <input type="text" id="clientId" class="form-input" placeholder="123456789">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Текст сообщения:</label>
+                <textarea id="messageText" class="form-input" rows="4" placeholder="Введите текст сообщения..."></textarea>
+            </div>
+            <button class="submit-button" onclick="sendMessage()">Отправить сообщение</button>
+            <button class="cancel-button" onclick="showMainMenu()">Отмена</button>
+        </div>
+        
+        <!-- Мое расписание -->
+        <div id="scheduleView" class="form-container">
+            <h2>Мое расписание</h2>
+            <div id="scheduleList"></div>
+            <button class="cancel-button" onclick="showMainMenu()">Назад</button>
+        </div>
+        
+        <!-- Сообщения об успехе/ошибке -->
+        <div id="messageContainer"></div>
+    </div>
+    
+    <script>
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Фиктивные данные для демонстрации
+        let scheduleData = [
+            {
+                id: 1,
+                createdDate: '2024-01-15 10:00:00',
+                adminId: 123456789,
+                place: 'кудрово',
+                sessionDate: '2024-01-20 14:00:00',
+                clientId: null,
+                clientUsername: null,
+                clientInst: null,
+                clientPhone: null
+            },
+            {
+                id: 2,
+                createdDate: '2024-01-15 10:05:00',
+                adminId: 123456789,
+                place: 'ломоносовская',
+                sessionDate: '2024-01-22 15:00:00',
+                clientId: 987654321,
+                clientUsername: 'john_doe',
+                clientInst: 'john.doe.inst',
+                clientPhone: '+7 999 123 45 67'
+            }
+        ];
+        
+        // Функции управления интерфейсом
+        function showMainMenu() {
+            hideAllSections();
+            document.getElementById('mainMenu').style.display = 'block';
+        }
+        
+        function showSection(sectionId) {
+            hideAllSections();
+            document.getElementById(sectionId).style.display = 'block';
+        }
+        
+        function hideAllSections() {
+            const sections = ['mainMenu', 'addSchedule', 'enrollClient', 'sendMailing', 'sendMessage', 'scheduleView'];
+            sections.forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+        
+        // Функции для работы с расписанием
+        function addSchedule() {
+            const place = document.getElementById('schedulePlace').value;
+            const date = document.getElementById('scheduleDate').value;
+            const time = document.getElementById('scheduleTime').value;
+            
+            if (!place || !date || !time) {
+                showMessage('Пожалуйста, заполните все поля', 'error');
+                return;
+            }
+            
+            // Здесь должен быть вызов к вашему серверу/боту
+            // Для демонстрации просто показываем успешное сообщение
+            showMessage('Расписание успешно создано!', 'success');
+            
+            // Очистка полей
+            document.getElementById('scheduleDate').value = '';
+            document.getElementById('scheduleTime').value = '';
+            
+            // Отправка данных в Telegram бот (через WebApp)
+            tg.sendData(JSON.stringify({
+                action: 'addSchedule',
+                place: place,
+                date: date,
+                time: time
+            }));
+        }
+        
+        function enrollClient() {
+            const clientInfo = document.getElementById('clientInfo').value;
+            const date = document.getElementById('clientDate').value;
+            const time = document.getElementById('clientTime').value;
+            
+            if (!clientInfo || !date || !time) {
+                showMessage('Пожалуйста, заполните все поля', 'error');
+                return;
+            }
+            
+            showMessage('Клиент успешно записан!', 'success');
+            
+            // Очистка полей
+            document.getElementById('clientInfo').value = '';
+            document.getElementById('clientDate').value = '';
+            document.getElementById('clientTime').value = '';
+            
+            // Отправка данных в Telegram бот
+            tg.sendData(JSON.stringify({
+                action: 'enrollClient',
+                clientInfo: clientInfo,
+                date: date,
+                time: time
+            }));
+        }
+        
+        function sendMailing() {
+            const text = document.getElementById('mailingText').value;
+            
+            if (!text) {
+                showMessage('Введите текст рассылки', 'error');
+                return;
+            }
+            
+            showMessage('Рассылка отправлена!', 'success');
+            document.getElementById('mailingText').value = '';
+            
+            tg.sendData(JSON.stringify({
+                action: 'sendMailing',
+                text: text
+            }));
+        }
+        
+        function sendMessage() {
+            const clientId = document.getElementById('clientId').value;
+            const messageText = document.getElementById('messageText').value;
+            
+            if (!clientId || !messageText) {
+                showMessage('Заполните все поля', 'error');
+                return;
+            }
+            
+            showMessage('Сообщение отправлено!', 'success');
+            document.getElementById('clientId').value = '';
+            document.getElementById('messageText').value = '';
+            
+            tg.sendData(JSON.stringify({
+                action: 'sendMessage',
+                clientId: clientId,
+                messageText: messageText
+            }));
+        }
+        
+        function loadSchedule() {
+            showSection('scheduleView');
+            
+            const scheduleList = document.getElementById('scheduleList');
+            scheduleList.innerHTML = '';
+            
+            scheduleData.forEach(item => {
+                const scheduleItem = document.createElement('div');
+                scheduleItem.className = 'schedule-item';
+                
+                let html = `
+                    <h3>${item.place}</h3>
+                    <p><strong>Дата создания:</strong> ${formatDate(item.createdDate)}</p>
+                    <p><strong>Дата процедуры:</strong> ${formatDate(item.sessionDate)}</p>
+                    <p><strong>ID админа:</strong> ${item.adminId}</p>
+                `;
+                
+                if (item.clientId) {
+                    html += `
+                        <p><strong>Записан клиент:</strong> ${item.clientId}</p>
+                        <p><strong>Юзернейм:</strong> @${item.clientUsername}</p>
+                        <p><strong>Инстаграм:</strong> @${item.clientInst}</p>
+                        <p><strong>Телефон:</strong> ${item.clientPhone}</p>
+                    `;
+                } else {
+                    html += '<p><strong>Статус:</strong> Никто не записан</p>';
+                }
+                
+                html += `<button class="delete-button" onclick="deleteSchedule(${item.id})">Удалить запись</button>`;
+                
+                scheduleItem.innerHTML = html;
+                scheduleList.appendChild(scheduleItem);
+            });
+        }
+        
+        function deleteSchedule(id) {
+            if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+                scheduleData = scheduleData.filter(item => item.id !== id);
+                loadSchedule();
+                showMessage('Запись удалена', 'success');
+                
+                tg.sendData(JSON.stringify({
+                    action: 'deleteSchedule',
+                    id: id
+                }));
+            }
+        }
+        
+        function exportData() {
+            showMessage('Экспорт данных начат...', 'success');
+            
+            tg.sendData(JSON.stringify({
+                action: 'exportData'
+            }));
+        }
+        
+        // Вспомогательные функции
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+        
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверить, есть ли сохраненная авторизация
+            if (sessionStorage.getItem('adminAuthenticated') === 'true') {
+                isAuthenticated = true;
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('mainHeader').classList.remove('hidden');
+                showMainMenu();
+            }
+            
+            // Обработчик Enter в поле пароля
+            document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+            
+            // Настройка цветовой схемы Telegram
+            if (tg.themeParams) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
+                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color);
+                document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color);
+                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color);
+                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color);
+            }
+        });
+    </script>
+</body>
+</html>
